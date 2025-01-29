@@ -6,13 +6,15 @@ from sklearn.cluster import KMeans
 
 """
 TDOD: 
- - anz. maschen nicht readonly
+ - amount stritches not readonly
  - ratio readonly
- - anz reihen aus anz. maschen & ratio berechnen
+ - calc amount rows from ratio and amount stitches 
 
  OPT:
  - scale image to window size
  - calculator inputs in main app
+ - more efficient rendering
+ - Make available fro less tech savy users as binary (compile Appimage and win executable)
 """
 
 
@@ -76,17 +78,17 @@ class PixelateApp(tk.Tk):
         self.scale_var_scale.grid(row=1, column=2)
 
         # amount stithes
-        tk.Label(controls_frame, text="Anz. Maschen").grid(row=0, column=3)
+        tk.Label(controls_frame, text="Number of stitches:").grid(row=0, column=3)
         self.amount_stitches_entry = tk.Entry(controls_frame, textvariable=self.amount_stitches_var, state="readonly")
         self.amount_stitches_entry.grid(row=1, column=3)
 
         # amount rows
-        tk.Label(controls_frame, text="Anz. Reihen").grid(row=0, column=4)
+        tk.Label(controls_frame, text="Number of rows:").grid(row=0, column=4)
         self.amount_rows_entry = tk.Entry(controls_frame, textvariable=self.amount_rows_var, state="readonly")
         self.amount_rows_entry.grid(row=1, column=4)
 
         # amount colors
-        tk.Label(controls_frame, text="Anz. Farben").grid(row=0, column=5)
+        tk.Label(controls_frame, text="Number of colors:").grid(row=0, column=5)
         self.amount_colors_entry = tk.Entry(controls_frame, textvariable=self.amount_colors_var)
         self.amount_colors_entry.grid(row=1, column=5)
 
