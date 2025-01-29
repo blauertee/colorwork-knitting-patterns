@@ -6,33 +6,14 @@ from sklearn.cluster import KMeans
 
 """
 TDOD: 
- - amount stritches not readonly
+ - amount stitches not readonly
  - ratio readonly
  - calc amount rows from ratio and amount stitches 
 
- OPT:
- - scale image to window size
- - calculator inputs in main app
- - more efficient rendering
- - Make available fro less tech savy users as binary (compile Appimage and win executable)
 """
 
 
-def pixelate(img_array, tile_w, tile_h):
-    """
-    Return a new numpy array pixelated into tile_w x tile_h blocks.
-    Each block is assigned the average color of its pixels.
-    """
-    h, w = img_array.shape[:2]
-    pixelated = img_array.copy()
-    
-    for y in range(0, h, tile_h):
-        for x in range(0, w, tile_w):
-            block = pixelated[y:y+tile_h, x:x+tile_w]
-            avg_color = block.mean(axis=(0, 1))
-            block[:] = avg_color
-    
-    return pixelated
+
 
 class PixelateApp(tk.Tk):
     def __init__(self, w = 5, h = 5, s = 1):
@@ -49,22 +30,26 @@ class PixelateApp(tk.Tk):
         self.amount_stitches_var = tk.IntVar()
         self.amount_rows_var = tk.IntVar()
         self.amount_colors_var = tk.IntVar(value = 2)
+        self.ratio_calc_num_stitches_var = tk.IntVar(value = 1)
+        self.ratio_calc_num_rows_var = tk.IntVar(value = 1)
+        self.ratio_calc_length_stitches_var = tk.DoubleVar(value = 1)
+        self.ratio_calc_length_rows_var = tk.DoubleVar(value = 1)
 
         # Tile Width
         tk.Label(controls_frame, text="Tile Width:").grid(row=0, column=0)
-        self.tile_w_scale = tk.Scale(
-            controls_frame, from_=1, to=100, orient=tk.HORIZONTAL,
-            variable=self.tile_w_var, command=self.update_preview
+        self.stitch_length_entry = tk.Entry(
+            controls_frame,
+            textvariable=self.tile_w_var, command=self.update_preview
         )
-        self.tile_w_scale.grid(row=1, column=0)
+        self.stitch_length_entry.grid(row=1, column=0)
 
         # Tile Height
         tk.Label(controls_frame, text="Tile Height:").grid(row=0, column=1)
-        self.tile_h_scale = tk.Scale(
-            controls_frame, from_=1, to=100, orient=tk.HORIZONTAL,
-            variable=self.tile_h_var, command=self.update_preview
+        self.row_length_entry = tk.Entry(
+            controls_frame,
+            textvariable=self.tile_w_var, command=self.update_preview
         )
-        self.tile_h_scale.grid(row=1, column=1)
+        self.row_length_entry.grid(row=1, column=1)
 
         
 
@@ -89,12 +74,35 @@ class PixelateApp(tk.Tk):
 
         # amount colors
         tk.Label(controls_frame, text="Number of colors:").grid(row=0, column=5)
-        self.amount_colors_entry = tk.Entry(controls_frame, textvariable=self.amount_colors_var)
+        self.amount_colors_entry = tk.Entry(
+            controls_frame,
+            textvariable=self.amount_colors_var,
+            command = self.update_preview)
         self.amount_colors_entry.grid(row=1, column=5)
+
+        # ratio calculator
+        tk.Label(controls_frame, text="An amount of").grid(row=0, column=6)
+        self.ratio_calc_num_stitches_entry = tk.Entry(controls_frame, textvariable=self.ratio_calc_num_stitches_var,
+            command = calculate_ratio)
+        self.ratio_calc_num_stitches_entry.grid(row=0, column=7)
+
+        tk.Label(controls_frame, text="stitches has length").grid(row=0, column=8)
+        self.ratio_calc_length_stitches_entry = tk.Entry(controls_frame, textvariable=self.ratio_calc_length_stitches_var,
+            command = self.calculate_ratio)
+        self.ratio_calc_length_stitches_entry.grid(row=0, column=9)
+
+        tk.Label(controls_frame, text="An amount of").grid(row=1, column=6)
+        self.ratio_calc_num_stitches_entry = tk.Entry(controls_frame, textvariable=self.ratio_calc_num_rows_var, command = self.calculate_ratio)
+        self.ratio_calc_num_stitches_entry.grid(row=1, column=7)
+
+        tk.Label(controls_frame, text="rows has length").grid(row=1, column=8)
+        self.ratio_calc_length_rows_entry = tk.Entry(controls_frame, textvariable=self.ratio_calc_length_rows_var, command = self.calculate_ratio)
+        self.ratio_calc_length_rows_entry.grid(row=1, column=9)
+
 
         # Buttons
         self.open_btn = tk.Button(controls_frame, text="Open Image", command=self.open_image)
-        self.open_btn.grid(row=2, column=0, columnspan=2, sticky="ew")
+        self.open_btn.grid(row=2, column=0, columnspan=3, sticky="ew")
 
         self.save_btn = tk.Button(controls_frame, text="Save Image", command=self.save_image)
         self.save_btn.grid(row=2, column=2, columnspan=3, sticky="ew")
@@ -106,6 +114,7 @@ class PixelateApp(tk.Tk):
         # data properties
         self.original_array = None
         self.preview_imgtk = None
+        self.stitch_row_ratio = 1
 
     def open_image(self):
         file_path = filedialog.askopenfilename()
@@ -136,11 +145,11 @@ class PixelateApp(tk.Tk):
             scaled_img = img.resize((int(w*scale), int(h*scale)), Image.NEAREST)
             scaled_array = np.array(scaled_img)
             
-            pix_array = pixelate(scaled_array, pw, ph)
+            pix_array = self.rasterize(scaled_array, pw, ph)
 
             pix_array = self.reduce_colors_kmeans(pix_array, self.amount_colors_var.get())
 
-            # Draw grid lines on the pixelated image (using black lines).
+            # Draw grid lines on the rasterized image (using black lines).
             h, w, _ = pix_array.shape
 
             if(min(ph,pw) > 2):
@@ -173,59 +182,44 @@ class PixelateApp(tk.Tk):
 
         return quantized
 
+    def rasterize(img_array, tile_w, tile_h):
+        """
+        Return a new numpy array rasterized into tile_w x tile_h blocks.
+        Each block is assigned the average color of its pixels.
+        """
+        h, w = img_array.shape[:2]
+        rasterized = img_array.copy()
+        
+        for y in range(0, h, tile_h):
+            for x in range(0, w, tile_w):
+                block = rasterized[y:y+tile_h, x:x+tile_w]
+                avg_color = block.mean(axis=(0, 1))
+                block[:] = avg_color
+        
+        return rasterized
 
-class RectangleRatioCalculator(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.title("Rectangle Ratio Calculator")
-
-        tk.Label(self, text="Anzahl Maschen:").grid(row=0, column=0)
-        self.entry_x = tk.Entry(self)
-        self.entry_x.grid(row=0, column=1)
-
-        tk.Label(self, text="Anzahl Reihen:").grid(row=1, column=0)
-        self.entry_y = tk.Entry(self)
-        self.entry_y.grid(row=1, column=1)
-
-        tk.Label(self, text="Länge Reihen").grid(row=2, column=0)
-        self.entry_length = tk.Entry(self)
-        self.entry_length.grid(row=2, column=1)
-
-        tk.Label(self, text="Länge Maschen").grid(row=3, column=0)
-        self.entry_width = tk.Entry(self)
-        self.entry_width.grid(row=3, column=1)
-
-        tk.Button(self, text="Weiter", command=self.calculate_ratio).grid(row=4, column=0, columnspan=2)
-        self.result_label = tk.Label(self, text="")
-        self.result_label.grid(row=5, column=0, columnspan=2)
-
-        self.ration = None
-
+    # todo: adapt to vars
     def calculate_ratio(self):
         try:
-            nx = float(self.entry_x.get())
-            ny = float(self.entry_y.get())
-            length = float(self.entry_length.get())
-            width = float(self.entry_width.get())
+            nx = float(self.ratio_calc_num_stitches_var.get())
+            ny = float(self.ratio_calc_num_rows_var.get())
+            length = float(self.ratio_calc_length_stitches_var.get())
+            width = float(self.ratio_calc_length_rows_var.get())
             ratio = (width / nx) / (length / ny)
-            self.result_label.config(text=f"Rectangle Ratio: {ratio:.2f}")
             self.ratio = ratio
-            self.destroy()
+            self.update_preview()
+
         except ValueError:
             self.result_label.config(text="Invalid input.")
+
+
+
+    
     
 
 
 
 if __name__ == "__main__":
-    calc_app = RectangleRatioCalculator()
-    calc_app.mainloop()
-    if(calc_app.ration != None):
-        ratio = calc_app.ratio
-        height = 10
-        width = round(height * ratio)
-        px_app = PixelateApp(width, height, 2)
-    else:
-        px_app = PixelateApp()
+    px_app = PixelateApp()
     px_app.attributes('-zoomed', True)
     px_app.mainloop()
