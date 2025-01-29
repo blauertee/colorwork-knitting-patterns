@@ -35,6 +35,7 @@ class PixelateApp(tk.Tk):
         self.scale_var = tk.DoubleVar(value=s)
         self.anz_maschen_var = tk.IntVar()
         self.anz_reihen_var = tk.IntVar()
+        self.anz_farben_var = tk.IntVar(value = 2)
 
         # Tile Width
         tk.Label(controls_frame, text="Tile Width:").grid(row=0, column=0)
@@ -74,9 +75,9 @@ class PixelateApp(tk.Tk):
         self.anz_reihen_entry.grid(row=1, column=4)
 
         # Anz. Farben
-        tk.Label(controls_frame, text="Anz. Farben").grid(row=0, column=3)
-        self.anz_maschen_entry = tk.Entry(controls_frame, textvariable=self.anz_maschen_var, state="readonly")
-        self.anz_maschen_entry.grid(row=1, column=3)
+        tk.Label(controls_frame, text="Anz. Farben").grid(row=0, column=5)
+        self.anz_farben_entry = tk.Entry(controls_frame, textvariable=self.anz_farben_var)
+        self.anz_farben_entry.grid(row=1, column=5)
 
         # Buttons
         self.open_btn = tk.Button(controls_frame, text="Open Image", command=self.open_image)
@@ -124,7 +125,7 @@ class PixelateApp(tk.Tk):
             
             pix_array = pixelate(scaled_array, pw, ph)
 
-            pix_array = self.reduce_colors_kmeans(pix_array, 2)
+            pix_array = self.reduce_colors_kmeans(pix_array, self.anz_farben_var.get())
 
             # Draw grid lines on the pixelated image (using black lines).
             h, w, _ = pix_array.shape
@@ -133,12 +134,12 @@ class PixelateApp(tk.Tk):
                 # Horizontal lines
                 for y in range(ph, h, ph):
                     pix_array[y, :, :] = [0, 0, 0]
-                self.anz_reihen_var.set(y)
+                self.anz_reihen_var.set(h // ph)
 
                 # Vertical lines
                 for x in range(pw, w, pw):
                     pix_array[:, x, :] = [0, 0, 0]
-                self.anz_maschen_var.set(x)
+                self.anz_maschen_var.set(w // pw)
 
             # Convert numpy array back to PIL Image for display
             pix_img = Image.fromarray(pix_array.astype(np.uint8))
