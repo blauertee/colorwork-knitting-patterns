@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 import numpy as np
 from PIL import Image, ImageTk
+from sklearn.cluster import KMeans
 
 
 def pixelate(img_array, tile_w, tile_h):
@@ -51,6 +52,8 @@ class PixelateApp(tk.Tk):
         )
         self.tile_h_scale.grid(row=1, column=1)
 
+        
+
         # Scale
         tk.Label(controls_frame, text="Scale:").grid(row=0, column=2)
         self.scale_var_scale = tk.Scale(
@@ -69,6 +72,11 @@ class PixelateApp(tk.Tk):
         tk.Label(controls_frame, text="Anz. Reihen").grid(row=0, column=4)
         self.anz_reihen_entry = tk.Entry(controls_frame, textvariable=self.anz_reihen_var, state="readonly")
         self.anz_reihen_entry.grid(row=1, column=4)
+
+        # Anz. Farben
+        tk.Label(controls_frame, text="Anz. Farben").grid(row=0, column=3)
+        self.anz_maschen_entry = tk.Entry(controls_frame, textvariable=self.anz_maschen_var, state="readonly")
+        self.anz_maschen_entry.grid(row=1, column=3)
 
         # Buttons
         self.open_btn = tk.Button(controls_frame, text="Open Image", command=self.open_image)
@@ -109,13 +117,14 @@ class PixelateApp(tk.Tk):
 
             # scale image within grid
             img = Image.fromarray(self.original_array.astype(np.uint8))
-            img = img.quantize(colors = 2, method = 2)
             w, h = img.size
             scale = self.scale_var.get()
             scaled_img = img.resize((int(w*scale), int(h*scale)), Image.NEAREST)
             scaled_array = np.array(scaled_img)
             
             pix_array = pixelate(scaled_array, pw, ph)
+
+            pix_array = self.reduce_colors_kmeans(pix_array, 2)
 
             # Draw grid lines on the pixelated image (using black lines).
             h, w, _ = pix_array.shape
@@ -136,6 +145,19 @@ class PixelateApp(tk.Tk):
             self.current_image = pix_img
             self.preview_imgtk = ImageTk.PhotoImage(pix_img)
             self.preview_label.config(image=self.preview_imgtk)
+
+    def reduce_colors_kmeans(self, img: np.array, n_colors: int) -> np.array:
+        # Cluster using KMeans
+        pixels = img.reshape(-1, 3)
+        kmeans = KMeans(n_clusters=n_colors, n_init='auto')
+        kmeans.fit(pixels)
+        centers = kmeans.cluster_centers_
+        labels = kmeans.labels_
+
+        # Replace each pixel with its cluster's average color
+        quantized = centers[labels].reshape(img.shape).astype(np.uint8)
+
+        return quantized
 
 
 class RectangleRatioCalculator(tk.Tk):
