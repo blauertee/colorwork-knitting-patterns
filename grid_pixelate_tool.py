@@ -4,6 +4,17 @@ import numpy as np
 from PIL import Image, ImageTk
 from sklearn.cluster import KMeans
 
+"""
+TDOD: 
+ - anz. maschen nicht readonly
+ - ratio readonly
+ - anz reihen aus anz. maschen & ratio berechnen
+
+ OPT:
+ - scale image to window size
+ - calculator inputs in main app
+"""
+
 
 def pixelate(img_array, tile_w, tile_h):
     """
@@ -33,9 +44,9 @@ class PixelateApp(tk.Tk):
         self.tile_w_var = tk.IntVar(value=w)
         self.tile_h_var = tk.IntVar(value=h)
         self.scale_var = tk.DoubleVar(value=s)
-        self.anz_maschen_var = tk.IntVar()
-        self.anz_reihen_var = tk.IntVar()
-        self.anz_farben_var = tk.IntVar(value = 2)
+        self.amount_stitches_var = tk.IntVar()
+        self.amount_rows_var = tk.IntVar()
+        self.amount_colors_var = tk.IntVar(value = 2)
 
         # Tile Width
         tk.Label(controls_frame, text="Tile Width:").grid(row=0, column=0)
@@ -64,20 +75,20 @@ class PixelateApp(tk.Tk):
         )
         self.scale_var_scale.grid(row=1, column=2)
 
-        # Anz. Maschen
+        # amount stithes
         tk.Label(controls_frame, text="Anz. Maschen").grid(row=0, column=3)
-        self.anz_maschen_entry = tk.Entry(controls_frame, textvariable=self.anz_maschen_var, state="readonly")
-        self.anz_maschen_entry.grid(row=1, column=3)
+        self.amount_stitches_entry = tk.Entry(controls_frame, textvariable=self.amount_stitches_var, state="readonly")
+        self.amount_stitches_entry.grid(row=1, column=3)
 
-        # Anz. Reihen
+        # amount rows
         tk.Label(controls_frame, text="Anz. Reihen").grid(row=0, column=4)
-        self.anz_reihen_entry = tk.Entry(controls_frame, textvariable=self.anz_reihen_var, state="readonly")
-        self.anz_reihen_entry.grid(row=1, column=4)
+        self.amount_rows_entry = tk.Entry(controls_frame, textvariable=self.amount_rows_var, state="readonly")
+        self.amount_rows_entry.grid(row=1, column=4)
 
-        # Anz. Farben
+        # amount colors
         tk.Label(controls_frame, text="Anz. Farben").grid(row=0, column=5)
-        self.anz_farben_entry = tk.Entry(controls_frame, textvariable=self.anz_farben_var)
-        self.anz_farben_entry.grid(row=1, column=5)
+        self.amount_colors_entry = tk.Entry(controls_frame, textvariable=self.amount_colors_var)
+        self.amount_colors_entry.grid(row=1, column=5)
 
         # Buttons
         self.open_btn = tk.Button(controls_frame, text="Open Image", command=self.open_image)
@@ -125,7 +136,7 @@ class PixelateApp(tk.Tk):
             
             pix_array = pixelate(scaled_array, pw, ph)
 
-            pix_array = self.reduce_colors_kmeans(pix_array, self.anz_farben_var.get())
+            pix_array = self.reduce_colors_kmeans(pix_array, self.amount_colors_var.get())
 
             # Draw grid lines on the pixelated image (using black lines).
             h, w, _ = pix_array.shape
@@ -134,12 +145,12 @@ class PixelateApp(tk.Tk):
                 # Horizontal lines
                 for y in range(ph, h, ph):
                     pix_array[y, :, :] = [0, 0, 0]
-                self.anz_reihen_var.set(h // ph)
+                self.amount_rows_var.set(h // ph)
 
                 # Vertical lines
                 for x in range(pw, w, pw):
                     pix_array[:, x, :] = [0, 0, 0]
-                self.anz_maschen_var.set(w // pw)
+                self.amount_stitches_var.set(w // pw)
 
             # Convert numpy array back to PIL Image for display
             pix_img = Image.fromarray(pix_array.astype(np.uint8))
