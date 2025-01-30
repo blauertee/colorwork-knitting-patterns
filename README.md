@@ -11,7 +11,7 @@ Feel free to contribute!
  - install scikit-learn using pip
  - run the grid_pixelate_tool.py file using python3
 
-There should be plenty of tutorials available for those steps, they work a bit different depending on you operating system. If you have any troubles feel free to wite an issue here.
+There should be plenty of tutorials available for those steps, they work a bit different depending on you operating system. If you have any troubles feel free to write an issue here.
 ## Screenshot of the tool in use
 ![Screenshot showing the tool](https://github.com/blauertee/colorwork-knitting-patterns/blob/main/screenshot.png?raw=true)
 
