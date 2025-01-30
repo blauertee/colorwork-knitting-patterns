@@ -22,16 +22,12 @@ class PixelateApp(tk.Tk):
         controls_frame = tk.Frame(self)
         controls_frame.pack()
 
-        # Variables
-        # @GPT remove these two tk variables and calculate the with
-        # and height of each tile depending on the ratio 
-        # and num_stitches
         self.single_stitch_length_var = tk.IntVar(value=w)
         self.single_row_length_var = tk.IntVar(value=h)
         
 
         self.scale_var = tk.DoubleVar(value=s)
-        self.amount_stitches_var = tk.IntVar()
+        self.amount_stitches_var = tk.IntVar(value = 30)
         self.amount_rows_var = tk.IntVar()
         self.amount_colors_var = tk.IntVar(value=2)
 
@@ -41,37 +37,25 @@ class PixelateApp(tk.Tk):
         self.ratio_calc_length_rows_var = tk.DoubleVar(value=1)
         self.ratio_var = tk.DoubleVar(value=1.0)  # For read-only ratio
 
-        """
-        @GPT write handlers for each of those inputs and update 
-        all releated values depending on them 
-        and call update_preview at the and of each handler
-        """
 
         # Tile Width
-        tk.Label(controls_frame, text="Tile Width:").grid(row=0, column=0)
-        self.tile_w_entry = tk.Entry(controls_frame, textvariable=self.single_stitch_length_var)
+        tk.Label(controls_frame, text="Tile Width (px):").grid(row=0, column=0)
+        self.tile_w_entry = tk.Entry(controls_frame, textvariable=self.single_stitch_length_var, state="readonly")
         self.tile_w_entry.grid(row=1, column=0)
 
         # Tile Height
-        tk.Label(controls_frame, text="Tile Height:").grid(row=0, column=1)
-        self.tile_h_entry = tk.Entry(controls_frame, textvariable=self.Singl)
+        tk.Label(controls_frame, text="Tile Height (px):").grid(row=0, column=1)
+        self.tile_h_entry = tk.Entry(controls_frame, textvariable=self.single_row_length_var, state="readonly")
         self.tile_h_entry.grid(row=1, column=1)
 
-        # Scale
-        tk.Label(controls_frame, text="Scale:").grid(row=0, column=2)
-        self.scale_var_scale = tk.Scale(
-            controls_frame, from_=0.2, to=5, resolution=0.1,
-            orient=tk.HORIZONTAL, variable=self.scale_var,
-            command=self.update_preview
-        )
-        self.scale_var_scale.grid(row=1, column=2)
 
-        # Number of stitches (now editable)
+        # Number of stitches
         tk.Label(controls_frame, text="Number of stitches:").grid(row=0, column=3)
         self.amount_stitches_entry = tk.Entry(controls_frame, textvariable=self.amount_stitches_var)
         self.amount_stitches_entry.grid(row=1, column=3)
+        self.amount_stitches_entry.bind("<Return>", lambda e: self.update_preview())
 
-        # Number of rows (still read-only)
+        # Number of rows 
         tk.Label(controls_frame, text="Number of rows:").grid(row=0, column=4)
         self.amount_rows_entry = tk.Entry(controls_frame, textvariable=self.amount_rows_var, state="readonly")
         self.amount_rows_entry.grid(row=1, column=4)
@@ -114,7 +98,7 @@ class PixelateApp(tk.Tk):
 
         # Calculate ratio button
         self.calc_ratio_button = tk.Button(
-            controls_frame, text="Calculate Ratio", command=self.calculate_ratio
+            controls_frame, text="Calculate Ratio", command=self.update_preview
         )
         self.calc_ratio_button.grid(row=2, column=8, columnspan=2, sticky="ew")
 
@@ -126,6 +110,7 @@ class PixelateApp(tk.Tk):
 
         # Preview label
         self.preview_label = tk.Label(self)
+        self.preview_label.bind("<Configure>", lambda e : self.update_preview())
         self.preview_label.pack(fill=tk.BOTH, expand=True)
 
         # Data
@@ -153,21 +138,23 @@ class PixelateApp(tk.Tk):
         if self.original_array is None:
             return
         
-        """
-        @GPT calculate the with and height of each raster tile by deviding
-        the image width by num_stitches and calculating the height by using the
-        width height ratio
-        """
-        pw = self.single_stitch_length_var.get()
-        ph = self.Singl.get()
+        self.calculate_ratio()
+        
         img = Image.fromarray(self.original_array.astype(np.uint8))
 
         w, h = img.size
-        scale = self.scale_var.get()
-        """@GPT change this to always scale the image accoridung
-        to the available space for the image preview widget (keeping the image ratio)"""
 
+        scale = min(self.preview_label.winfo_height() / h, self.preview_label.winfo_width() / w)
         scaled_img = img.resize((int(w*scale), int(h*scale)), Image.NEAREST)
+
+        w, h = scaled_img.size
+
+        pw = w // self.amount_stitches_var.get()
+        self.single_stitch_length_var.set(pw)
+        ph = round(pw * self.ratio_var.get())
+        self.single_row_length_var.set(ph)
+
+        
         scaled_array = np.array(scaled_img)
 
         pix_array = self.rasterize(scaled_array, pw, ph)
@@ -181,7 +168,7 @@ class PixelateApp(tk.Tk):
             self.amount_rows_var.set(h // ph)
             for x in range(pw, w, pw):
                 pix_array[:, x, :] = [0, 0, 0]
-            self.amount_stitches_var.set(w // pw)
+        
 
         pix_img = Image.fromarray(pix_array.astype(np.uint8))
         self.current_image = pix_img
@@ -217,15 +204,13 @@ class PixelateApp(tk.Tk):
 
             # ratio = (width / nx) / (length / ny)
             # Simplifies to: ratio of rows to stitches
-            ratio = (width * ny) / (length * nx)
+            ratio = (width * nx) / (length * ny)
             self.ratio_var.set(ratio)
 
             # Now calculate rows from ratio * (amount of stitches)
             # Note: using current value from the "Number of stitches" field
             st = self.amount_stitches_var.get()
             self.amount_rows_var.set(int(st * ratio))
-
-            self.update_preview()
 
         except ValueError:
             pass  # Just ignore invalid inputs
@@ -234,4 +219,5 @@ class PixelateApp(tk.Tk):
 
 if __name__ == "__main__":
     px_app = PixelateApp()
+    px_app.attributes('-zoomed', True)
     px_app.mainloop()
