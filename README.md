@@ -9,7 +9,7 @@ Feel free to contribute!
 ## How to use:
  - install python3
  - install scikit-learn using pip
- - run the grid_pixelate_tool.py using python3
+ - run the grid_pixelate_tool.py file using python3
 
 There should be plenty of tutorials available for those steps, they work a bit different depending on you operating system. If you have any troubles feel free to wite an issue here.
 
