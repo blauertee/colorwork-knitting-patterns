@@ -104,9 +104,9 @@ class PixelateApp(tk.Tk):
 
         # Buttons
         self.open_btn = tk.Button(controls_frame, text="Open Image", command=self.open_image)
-        self.open_btn.grid(row=3, column=0, columnspan=3, sticky="ew")
+        self.open_btn.grid(row=2, column=0, columnspan=3, sticky="ew")
         self.save_btn = tk.Button(controls_frame, text="Save Image", command=self.save_image)
-        self.save_btn.grid(row=3, column=3, columnspan=3, sticky="ew")
+        self.save_btn.grid(row=2, column=3, columnspan=3, sticky="ew")
 
         # Preview label
         self.preview_label = tk.Label(self)
