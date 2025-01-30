@@ -12,7 +12,8 @@ Feel free to contribute!
  - run the grid_pixelate_tool.py file using python3
 
 There should be plenty of tutorials available for those steps, they work a bit different depending on you operating system. If you have any troubles feel free to wite an issue here.
-
+## Screenshot of the tool in use
 ![Screenshot showing the tool](https://github.com/blauertee/colorwork-knitting-patterns/blob/main/screenshot.png?raw=true)
 
+## The original imaged that was used for the screenshot
 ![Example image with a tax the rich slogan](https://github.com/blauertee/colorwork-knitting-patterns/blob/main/tax_the_rich.png?raw=true)
