@@ -7,6 +7,13 @@ One todo would be to release a binary so more inexperienced users can use it wit
 Feel free to contribute!
 
 ## How to use:
+
+#### Ubuntu
+Run the install script with `bash ubuntu_install_script.sh` to uninstall run `bash ubuntu_install_script.sh uninstall`. 
+
+Then you will find the app by searching colorwork in you installed applications.
+
+#### Other 
  - install python3
  - install scikit-learn using pip
  - run the grid_pixelate_tool.py file using python3
